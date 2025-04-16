@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>単語ツール 発音機能（MP3）600語対応</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      position: relative;
+    }
+    .counter, .timer {
+      margin: 10px;
+      font-size: 18px;
+    }
+    .word {
+      font-size: 100px;
+      margin: 40px 0;
+    }
+    #reveal, #correct {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 30%;
+      font-size: 24px;
+      color: white;
+      border: none;
+    }
+    #reveal { background-color: #2196F3; }
+    #correct { background-color: #4CAF50; display: none; }
+    #incorrect, #retry {
+      position: fixed;
+      bottom: 35%;
+      right: 20px;
+      width: 200px;
+      height: 100px;
+      font-size: 20px;
+      color: white;
+      border: none;
+    }
+    #incorrect { background-color: #f44336; display: none; }
+    #retry { background-color: #f44336; display: none; }
+    #speak {
+      position: fixed;
+      bottom: 35%;
+      left: 20px;
+      width: 200px;
+      height: 100px;
+      font-size: 20px;
+      background-color: #FF9800;
+      color: white;
+      border: none;
+    }
+    .incorrect-list {
+      margin-top: 30px;
+      font-size: 18px;
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="counter"></div>
+  <div class="timer">00:00:00</div>
+  <div class="word">単語</div>
+
+  <button id="reveal">答えを見る</button>
+  <button id="correct">○</button>
+  <button id="incorrect">✕</button>
+  <button id="retry">✕ 問題だけもう一度</button>
+  <button id="speak">🔈 発音</button>
+
+  <div class="incorrect-list"></div>
+
+  <script>
+    const words = [
+  { word: 'survey', meaning: '調査', lang: 'en-US' },
+{ word: 'interview', meaning: '面接', lang: 'en-US' },
+{ word: 'exhibition', meaning: '展示', lang: 'en-US' },
+{ word: 'conference', meaning: '会議', lang: 'en-US' },
+{ word: 'available', meaning: '利用できる', lang: 'en-US' },
+{ word: 'exhibition', meaning: '年1回の', lang: 'en-US' },
+{ word: 'conference', meaning: '備品／器具', lang: 'en-US' },
+{ word: 'available', meaning: '部署', lang: 'en-US' },
+{ word: 'annual', meaning: '払い戻す', lang: 'en-US' },
+{ word: 'equipment', meaning: '領収書', lang: 'en-US' },
+{ word: 'department', meaning: '予定 計画', lang: 'en-US' },
+{ word: 'refund', meaning: '会議', lang: 'en-US' },
+{ word: 'receipt', meaning: '客', lang: 'en-US' },
+{ word: 'schedule', meaning: '従業員', lang: 'en-US' },
+{ word: 'meeting', meaning: '実際は', lang: 'en-US' },
+{ word: 'customer', meaning: '〜によれば', lang: 'en-US' },
+{ word: 'employee', meaning: '変える／つり銭', lang: 'en-US' },
+{ word: 'actually', meaning: '連絡を取る', lang: 'en-US' },
+{ word: 'according to', meaning: '購入する', lang: 'en-US' },
+{ word: 'change', meaning: '提供する', lang: 'en-US' },
+{ word: 'contact', meaning: '建物', lang: 'en-US' },
+{ word: 'purchase', meaning: 'おそらく', lang: 'en-US' },
+{ word: 'provide', meaning: '遅れ', lang: 'en-US' },
+{ word: 'building', meaning: '機会', lang: 'en-US' },
+{ word: 'probably', meaning: '賛成する', lang: 'en-US' },
+{ word: 'delay', meaning: '請求書', lang: 'en-US' },
+{ word: 'opportunity', meaning: '予約／約束', lang: 'en-US' },
+{ word: 'agree', meaning: '増加／増える', lang: 'en-US' },
+{ word: 'invoice', meaning: '作品', lang: 'en-US' },
+{ word: 'appointment', meaning: '参加する', lang: 'en-US' },
+{ word: 'increase', meaning: '集める', lang: 'en-US' },
+{ word: 'piece', meaning: 'いったん…すると', lang: 'en-US' },
+{ word: 'participate in', meaning: '現在のところ', lang: 'en-US' },
+{ word: 'collect', meaning: '過程／処理をする', lang: 'en-US' },
+{ word: 'once', meaning: '問題', lang: 'en-US' },
+{ word: 'currently', meaning: '経験', lang: 'en-US' },
+{ word: 'process', meaning: '旅行／見学', lang: 'en-US' },
+{ word: 'problem', meaning: '〜している間に／…の一方で', lang: 'en-US' },
+{ word: 'experience', meaning: '中心地／センター', lang: 'en-US' },
+{ word: 'tour', meaning: '監督者', lang: 'en-US' },
+{ word: 'while', meaning: '提案', lang: 'en-US' },
+{ word: 'center', meaning: 'クーポン', lang: 'en-US' },
+{ word: 'supervisor', meaning: '受け取る', lang: 'en-US' },
+{ word: 'suggestion', meaning: '参加者', lang: 'en-US' },
+{ word: 'coupon', meaning: 'ご注意ください', lang: 'en-US' },
+{ word: 'receive', meaning: '確認する', lang: 'en-US' },
+{ word: 'participant', meaning: '会う', lang: 'en-US' },
+{ word: 'note that', meaning: '減らす', lang: 'en-US' },
+{ word: 'confirm', meaning: '心配', lang: 'en-US' },
+{ word: 'meet', meaning: '方法／道', lang: 'en-US' },
+{ word: 'reduce', meaning: '特別', lang: 'en-US' },
+{ word: 'concern', meaning: '用意する', lang: 'en-US' },
+{ word: 'way', meaning: '改装', lang: 'en-US' },
+{ word: 'special', meaning: '早い', lang: 'en-US' },
+{ word: 'prepare', meaning: '意見／眺め', lang: 'en-US' },
+{ word: 'renovation', meaning: '戻る／返す', lang: 'en-US' },
+{ word: 'early', meaning: '承認する', lang: 'en-US' },
+{ word: 'view', meaning: '予算', lang: 'en-US' },
+{ word: 'return', meaning: 'チーム', lang: 'en-US' },
+{ word: 'approve', meaning: '最近', lang: 'en-US' },
+{ word: 'budget', meaning: '買い物をする', lang: 'en-US' },
+{ word: 'team', meaning: '素晴らしい', lang: 'en-US' },
+{ word: 'recently', meaning: '家', lang: 'en-US' },
+{ word: 'shop', meaning: '予約', lang: 'en-US' },
+{ word: 'fine', meaning: '追加の', lang: 'en-US' },
+{ word: 'home', meaning: '医学の', lang: 'en-US' },
+{ word: 'reservation', meaning: '動かす／引っ越す', lang: 'en-US' },
+{ word: 'additional', meaning: '資源', lang: 'en-US' },
+{ word: 'medical', meaning: '見せる', lang: 'en-US' },
+{ word: 'move', meaning: 'デザイン', lang: 'en-US' },
+{ word: 'resource', meaning: '全部の', lang: 'en-US' },
+{ word: 'show', meaning: 'プレゼンテーション', lang: 'en-US' },
+{ word: 'design', meaning: '持ってくる／もたらす', lang: 'en-US' },
+{ word: 'total', meaning: '改良する', lang: 'en-US' },
+{ word: 'presentation', meaning: 'いくつか', lang: 'en-US' },
+{ word: 'bring', meaning: '知らせ', lang: 'en-US' },
+{ word: 'improve', meaning: 'サービス／点検する', lang: 'en-US' },
+{ word: 'several', meaning: '…を通して', lang: 'en-US' },
+{ word: 'news', meaning: '…まで', lang: 'en-US' },
+{ word: 'service', meaning: '乗客', lang: 'en-US' },
+{ word: 'through', meaning: '農作物／製造する', lang: 'en-US' },
+{ word: 'until', meaning: '許す', lang: 'en-US' },
+{ word: 'passenger', meaning: '代表者', lang: 'en-US' },
+{ word: 'produce', meaning: '調べる', lang: 'en-US' },
+{ word: 'allow', meaning: '去る', lang: 'en-US' },
+{ word: 'representative', meaning: '問題／発行する', lang: 'en-US' },
+{ word: 'check', meaning: '価格', lang: 'en-US' },
+{ word: 'leave', meaning: '続く', lang: 'en-US' },
+{ word: 'issue', meaning: '促進する', lang: 'en-US' },
+{ word: 'price', meaning: '保有する', lang: 'en-US' },
+{ word: 'last', meaning: '考え', lang: 'en-US' },
+{ word: 'promote', meaning: '産業', lang: 'en-US' },
+{ word: 'hold', meaning: '特徴', lang: 'en-US' },
+{ word: 'idea', meaning: '取り替え', lang: 'en-US' },
+{ word: 'industry', meaning: '支払う', lang: 'en-US' },
+{ word: 'feature', meaning: '更新する', lang: 'en-US' },
+{ word: 'replacement', meaning: '担当責任者', lang: 'en-US' },
+{ word: 'pay', meaning: '雇う', lang: 'en-US' },
+{ word: 'update', meaning: '階', lang: 'en-US' },
+{ word: 'director', meaning: '課程', lang: 'en-US' },
+{ word: 'hire', meaning: '博物館', lang: 'en-US' },
+{ word: 'floor', meaning: '推薦する', lang: 'en-US' },
+{ word: 'course', meaning: '優れた', lang: 'en-US' },
+{ word: 'museum', meaning: '取り付ける', lang: 'en-US' },
+{ word: 'recommend', meaning: 'メンバー', lang: 'en-US' },
+{ word: 'great', meaning: '大きさ', lang: 'en-US' },
+{ word: 'install', meaning: '経営／管理', lang: 'en-US' },
+{ word: 'member', meaning: '見直し／見直す', lang: 'en-US' },
+{ word: 'size', meaning: '敬具', lang: 'en-US' },
+{ word: 'management', meaning: 'ロゴ', lang: 'en-US' },
+{ word: 'review', meaning: '改める', lang: 'en-US' },
+{ word: 'sincerely', meaning: '企業の', lang: 'en-US' },
+{ word: 'logo', meaning: '建設／工事', lang: 'en-US' },
+{ word: 'revise', meaning: '締め切り', lang: 'en-US' },
+{ word: 'corporate', meaning: '標識／署名する', lang: 'en-US' },
+{ word: 'construction', meaning: '取って代わる', lang: 'en-US' },
+{ word: 'deadline', meaning: '見つける', lang: 'en-US' },
+{ word: 'sign', meaning: '記録する', lang: 'en-US' },
+{ word: 'replace', meaning: '商品', lang: 'en-US' },
+{ word: 'find', meaning: '重要な', lang: 'en-US' },
+{ word: 'register', meaning: '開ける', lang: 'en-US' },
+{ word: 'merchandise', meaning: '施設', lang: 'en-US' },
+{ word: 'important', meaning: '身分証明書', lang: 'en-US' },
+{ word: 'open', meaning: 'その代りに', lang: 'en-US' },
+{ word: 'facility', meaning: '〜よりも前に', lang: 'en-US' },
+{ word: 'identification', meaning: '覚えている', lang: 'en-US' },
+{ word: 'instead', meaning: '公衆の', lang: 'en-US' },
+{ word: 'before', meaning: '提出する', lang: 'en-US' },
+{ word: 'remember', meaning: '休暇', lang: 'en-US' },
+{ word: 'public', meaning: '客', lang: 'en-US' },
+{ word: 'submit', meaning: '賞', lang: 'en-US' },
+{ word: 'vacation', meaning: '話し合う', lang: 'en-US' },
+{ word: 'guest', meaning: '費用／費用がかかる', lang: 'en-US' },
+{ word: 'award', meaning: '待つ', lang: 'en-US' },
+{ word: 'discuss', meaning: '入り口', lang: 'en-US' },
+{ word: 'cost', meaning: '番組', lang: 'en-US' },
+{ word: 'wait', meaning: '読む', lang: 'en-US' },
+{ word: 'entrance', meaning: '選ぶ', lang: 'en-US' },
+{ word: 'program', meaning: 'しかしながら', lang: 'en-US' },
+{ word: 'read', meaning: '無料の／自由な', lang: 'en-US' },
+{ word: 'choose', meaning: '入場券', lang: 'en-US' },
+{ word: 'however', meaning: '拡大する', lang: 'en-US' },
+{ word: 'free', meaning: '申し込み', lang: 'en-US' },
+{ word: 'ticket', meaning: '項目／品目', lang: 'en-US' },
+{ word: 'expand', meaning: '履歴書', lang: 'en-US' },
+{ word: 'application', meaning: '乗り物', lang: 'en-US' },
+{ word: 'item', meaning: '公園／駐車する', lang: 'en-US' },
+{ word: 'résumé', meaning: '議会', lang: 'en-US' },
+{ word: 'vehicle', meaning: '予約する', lang: 'en-US' },
+{ word: 'park', meaning: '志願者', lang: 'en-US' },
+{ word: 'council', meaning: '完成させる', lang: 'en-US' },
+{ word: 'book', meaning: '割引', lang: 'en-US' },
+{ word: 'candidate', meaning: '質', lang: 'en-US' },
+{ word: 'complete', meaning: '支払い', lang: 'en-US' },
+{ word: 'discount', meaning: '取り決める／並べる', lang: 'en-US' },
+{ word: 'quality', meaning: '異なった', lang: 'en-US' },
+{ word: 'payment', meaning: 'プロジェクト', lang: 'en-US' },
+{ word: 'arrange', meaning: 'ほとんどない', lang: 'en-US' },
+{ word: 'different', meaning: '〜の後で', lang: 'en-US' },
+{ word: 'project', meaning: '表題', lang: 'en-US' },
+{ word: 'few', meaning: '既に', lang: 'en-US' },
+{ word: 'after', meaning: '必要とする', lang: 'en-US' },
+{ word: 'subject', meaning: '支払い期限のきた', lang: 'en-US' },
+{ word: 'already', meaning: 'よく考える', lang: 'en-US' },
+{ word: 'require', meaning: '船／配送する', lang: 'en-US' },
+{ word: 'due', meaning: '可能な', lang: 'en-US' },
+{ word: 'consider', meaning: '地元の', lang: 'en-US' },
+{ word: 'ship', meaning: '地域', lang: 'en-US' },
+{ word: 'possible', meaning: '…の中に', lang: 'en-US' },
+{ word: 'local', meaning: '配達', lang: 'en-US' },
+{ word: 'area', meaning: '専門的な', lang: 'en-US' },
+{ word: 'into', meaning: '買う', lang: 'en-US' },
+{ word: 'delivery', meaning: '運ぶ', lang: 'en-US' },
+{ word: 'professional', meaning: '…に付属する', lang: 'en-US' },
+{ word: 'buy', meaning: '種類／類型', lang: 'en-US' },
+{ word: 'carry', meaning: '…以来', lang: 'en-US' },
+{ word: 'belong', meaning: '同僚', lang: 'en-US' },
+{ word: 'type', meaning: '要請／依頼', lang: 'en-US' },
+{ word: 'since', meaning: '材料／原料', lang: 'en-US' },
+{ word: 'colleague', meaning: '謝礼', lang: 'en-US' },
+{ word: 'request', meaning: 'それぞれの', lang: 'en-US' },
+{ word: 'material', meaning: '利益', lang: 'en-US' },
+{ word: 'fee', meaning: '家具', lang: 'en-US' },
+{ word: 'each', meaning: '再び', lang: 'en-US' },
+{ word: 'benefit', meaning: '配置する', lang: 'en-US' },
+{ word: 'furniture', meaning: '…の間に', lang: 'en-US' },
+{ word: 'again', meaning: 'すまなく思って', lang: 'en-US' },
+{ word: 'set', meaning: '財政上の', lang: 'en-US' },
+{ word: 'during', meaning: '…に興味を持っている', lang: 'en-US' },
+{ word: 'sorry', meaning: '出席する', lang: 'en-US' },
+{ word: 'financial', meaning: '整備', lang: 'en-US' },
+{ word: 'be interested in', meaning: '供給する', lang: 'en-US' },
+{ word: 'attend', meaning: '歓迎', lang: 'en-US' },
+{ word: 'maintenance', meaning: '行う', lang: 'en-US' },
+{ word: 'supply', meaning: '報告書／報告する', lang: 'en-US' },
+{ word: 'welcome', meaning: '始める', lang: 'en-US' },
+{ word: 'conduct', meaning: '…かどうか', lang: 'en-US' },
+{ word: 'report', meaning: 'まもなくやって来る', lang: 'en-US' },
+{ word: 'begin', meaning: '目的／意図', lang: 'en-US' },
+{ word: 'whether', meaning: '研究', lang: 'en-US' },
+{ word: 'upcoming', meaning: '大きい／広い', lang: 'en-US' },
+{ word: 'purpose', meaning: '励ます', lang: 'en-US' },
+{ word: 'research', meaning: '…を終える', lang: 'en-US' },
+{ word: 'large', meaning: '送る', lang: 'en-US' },
+{ word: 'encourage', meaning: '料金／請求する', lang: 'en-US' },
+{ word: 'finish', meaning: '決定', lang: 'en-US' },
+{ word: 'send', meaning: '在庫', lang: 'en-US' },
+{ word: 'charge', meaning: '出版する', lang: 'en-US' },
+{ word: 'decision', meaning: '…と思う', lang: 'en-US' },
+{ word: 'inventory', meaning: '受付', lang: 'en-US' },
+{ word: 'publish', meaning: '陳列', lang: 'en-US' },
+{ word: 'think', meaning: '両方の', lang: 'en-US' },
+{ word: 'reception', meaning: '事前の', lang: 'en-US' },
+{ word: 'display', meaning: '常に', lang: 'en-US' },
+{ word: 'both', meaning: '計画', lang: 'en-US' },
+{ word: 'advance', meaning: '用意ができた', lang: 'en-US' },
+{ word: 'always', meaning: '訪問する', lang: 'en-US' },
+{ word: 'plan', meaning: '文書／記録する', lang: 'en-US' },
+{ word: 'ready', meaning: '成功した', lang: 'en-US' },
+{ word: 'visit', meaning: 'クラス／種類', lang: 'en-US' },
+{ word: 'document', meaning: '図書館', lang: 'en-US' },
+{ word: 'successful', meaning: '研究会', lang: 'en-US' },
+{ word: 'class', meaning: '売る', lang: 'en-US' },
+{ word: 'library', meaning: '近い', lang: 'en-US' },
+{ word: 'seminar', meaning: '予期する', lang: 'en-US' },
+{ word: 'sell', meaning: '到着する', lang: 'en-US' },
+{ word: 'close', meaning: '取り去る', lang: 'en-US' },
+{ word: 'expect', meaning: '位置', lang: 'en-US' },
+{ word: 'arrive', meaning: '話す', lang: 'en-US' },
+{ word: 'remove', meaning: '説明する', lang: 'en-US' },
+{ word: 'position', meaning: '飛行', lang: 'en-US' },
+{ word: 'talk', meaning: '修理する', lang: 'en-US' },
+{ word: 'describe', meaning: '訓練', lang: 'en-US' },
+{ word: 'flight', meaning: 'たくさんの', lang: 'en-US' },
+{ word: 'repair', meaning: '学ぶ／知る', lang: 'en-US' },
+{ word: 'training', meaning: '残念ながら', lang: 'en-US' },
+{ word: 'a lot of', meaning: '人々', lang: 'en-US' },
+{ word: 'learn', meaning: '取り消す', lang: 'en-US' },
+{ word: 'unfortunately', meaning: '含む', lang: 'en-US' },
+{ word: 'people', meaning: '場所', lang: 'en-US' },
+{ word: 'cancel', meaning: '顧客', lang: 'en-US' },
+{ word: 'include', meaning: '場所／設置する', lang: 'en-US' },
+{ word: 'location', meaning: '行く', lang: 'en-US' },
+{ word: 'client', meaning: 'けれども／たとえ…しても', lang: 'en-US' },
+{ word: 'place', meaning: '役員会', lang: 'en-US' },
+{ word: 'travel', meaning: '書く', lang: 'en-US' },
+{ word: 'though', meaning: 'フィードバック', lang: 'en-US' },
+{ word: 'board', meaning: '公演', lang: 'en-US' },
+{ word: 'write', meaning: 'すぐ後', lang: 'en-US' },
+{ word: 'feedback', meaning: '…につき', lang: 'en-US' },
+{ word: 'performance', meaning: '仕出し業', lang: 'en-US' },
+{ word: 'soon', meaning: '確実にする', lang: 'en-US' },
+{ word: 'per', meaning: '見積もり／見積もる', lang: 'en-US' },
+{ word: 'catering', meaning: '潜在的な', lang: 'en-US' },
+{ word: 'ensure', meaning: '気づかせる', lang: 'en-US' },
+{ word: 'estimate', meaning: '…するつもりである', lang: 'en-US' },
+{ word: 'potential', meaning: '大いに喜んで', lang: 'en-US' },
+{ word: 'remind', meaning: '…にもかかわらず', lang: 'en-US' },
+{ word: 'intend', meaning: '…を専門に扱う', lang: 'en-US' },
+{ word: 'delighted', meaning: '無料の', lang: 'en-US' },
+{ word: 'despite', meaning: '…だけれども', lang: 'en-US' },
+{ word: 'specialize in', meaning: '水以外の飲み物', lang: 'en-US' },
+{ word: 'complimentary', meaning: '名誉／約束などを遵守する', lang: 'en-US' },
+{ word: 'although', meaning: '市長', lang: 'en-US' },
+{ word: 'beverage', meaning: '会場', lang: 'en-US' },
+{ word: 'honor', meaning: 'ただちに', lang: 'en-US' },
+{ word: 'mayor', meaning: '…に思われる', lang: 'en-US' },
+{ word: 'venue', meaning: '現代の', lang: 'en-US' },
+{ word: 'immediately', meaning: 'バッジ', lang: 'en-US' },
+{ word: 'sound', meaning: '(電気の)器具', lang: 'en-US' },
+{ word: 'contemporary', meaning: '助ける', lang: 'en-US' },
+{ word: 'badge', meaning: '視察', lang: 'en-US' },
+{ word: 'appliance', meaning: '(有効期限が)切れる', lang: 'en-US' },
+{ word: 'assist', meaning: '必要な', lang: 'en-US' },
+{ word: 'inspection', meaning: '同僚／関連付ける', lang: 'en-US' },
+{ word: 'expire', meaning: '文書業務', lang: 'en-US' },
+{ word: 'necessary', meaning: 'すいません', lang: 'en-US' },
+{ word: 'associate', meaning: '…しよう', lang: 'en-US' },
+{ word: 'paperwork', meaning: '…のままである', lang: 'en-US' },
+{ word: 'Excuse me.', meaning: '訂正する／正しい', lang: 'en-US' },
+{ word: 'Let’s', meaning: '続ける', lang: 'en-US' },
+{ word: 'remain', meaning: '確かに', lang: 'en-US' },
+{ word: 'correct', meaning: '布地', lang: 'en-US' },
+{ word: 'continue', meaning: '患者', lang: 'en-US' },
+{ word: 'certainly', meaning: '応募者', lang: 'en-US' },
+{ word: 'fabric', meaning: '建築家', lang: 'en-US' },
+{ word: 'patient', meaning: '添付する', lang: 'en-US' },
+{ word: 'applicant', meaning: 'いろいろの', lang: 'en-US' },
+{ word: 'architect', meaning: 'いずれにせよ', lang: 'en-US' },
+{ word: 'attach', meaning: '会話', lang: 'en-US' },
+{ word: 'variety', meaning: '忘れる', lang: 'en-US' },
+{ word: 'anyway', meaning: 'シャトル便のバス', lang: 'en-US' },
+{ word: 'conversation', meaning: '…のように見える', lang: 'en-US' },
+{ word: 'forget', meaning: '乗組員', lang: 'en-US' },
+{ word: 'shuttle', meaning: '投票', lang: 'en-US' },
+{ word: 'appear', meaning: '忙しい', lang: 'en-US' },
+{ word: 'crew', meaning: '仕事仲間', lang: 'en-US' },
+{ word: 'vote', meaning: '非常に優れた', lang: 'en-US' },
+{ word: 'busy', meaning: '食料品店', lang: 'en-US' },
+{ word: 'coworker', meaning: 'たくわえる', lang: 'en-US' },
+{ word: 'excellent', meaning: '原因／引き起こす', lang: 'en-US' },
+{ word: 'grocery', meaning: '引き寄せる', lang: 'en-US' },
+{ word: 'save', meaning: '開始する', lang: 'en-US' },
+{ word: 'cause', meaning: '地位／状態', lang: 'en-US' },
+{ word: 'attract', meaning: '手順', lang: 'en-US' },
+{ word: 'launch', meaning: '招待', lang: 'en-US' },
+{ word: 'status', meaning: '玄関ホール', lang: 'en-US' },
+{ word: 'procedure', meaning: 'よくわかる／実現する', lang: 'en-US' },
+{ word: 'invitation', meaning: '努力', lang: 'en-US' },
+{ word: 'lobby', meaning: '主に', lang: 'en-US' },
+{ word: 'realize', meaning: 'キャンペーン', lang: 'en-US' },
+{ word: 'effort', meaning: '手がかり', lang: 'en-US' },
+{ word: 'mainly', meaning: '提案', lang: 'en-US' },
+{ word: 'campaign', meaning: '挨拶をする', lang: 'en-US' },
+{ word: 'key', meaning: '…と交渉する', lang: 'en-US' },
+{ word: 'proposal', meaning: '数量', lang: 'en-US' },
+{ word: 'greet', meaning: '…の後ろに', lang: 'en-US' },
+{ word: 'negotiate', meaning: '快適な', lang: 'en-US' },
+{ word: 'quantity', meaning: '値段が高い', lang: 'en-US' },
+{ word: 'behind', meaning: '長', lang: 'en-US' },
+{ word: 'comfortable', meaning: 'ありがたく思う', lang: 'en-US' },
+{ word: 'expensive', meaning: '支店', lang: 'en-US' },
+{ word: 'head', meaning: '投資すること', lang: 'en-US' },
+{ word: 'appreciate', meaning: '頭金', lang: 'en-US' },
+{ word: 'branch', meaning: '難しい', lang: 'en-US' },
+{ word: 'investment', meaning: '一時の', lang: 'en-US' },
+{ word: 'deposit', meaning: '保護', lang: 'en-US' },
+{ word: 'difficult', meaning: '…すればよいのだが', lang: 'en-US' },
+{ word: 'temporary', meaning: '映画', lang: 'en-US' },
+{ word: 'protection', meaning: '状態', lang: 'en-US' },
+{ word: 'wish', meaning: '装置', lang: 'en-US' },
+{ word: 'film', meaning: '人事部', lang: 'en-US' },
+{ word: 'condition', meaning: '教授', lang: 'en-US' },
+{ word: 'device', meaning: '不満', lang: 'en-US' },
+{ word: 'personnel', meaning: '多数の', lang: 'en-US' },
+{ word: 'professor', meaning: '交換する', lang: 'en-US' },
+{ word: 'complaint', meaning: 'どうにかやり遂げる', lang: 'en-US' },
+{ word: 'multiple', meaning: 'お気に入りの', lang: 'en-US' },
+{ word: 'exchange', meaning: 'とても', lang: 'en-US' },
+{ word: 'manage', meaning: '距離', lang: 'en-US' },
+{ word: 'favorite', meaning: '手荷物', lang: 'en-US' },
+{ word: 'quite', meaning: '入学／入会', lang: 'en-US' },
+{ word: 'distance', meaning: '尋ねる', lang: 'en-US' },
+{ word: 'luggage', meaning: '食材', lang: 'en-US' },
+{ word: 'admission', meaning: 'テクニック', lang: 'en-US' },
+{ word: 'inquire', meaning: '注意', lang: 'en-US' },
+{ word: 'ingredient', meaning: 'コンサルタント', lang: 'en-US' },
+{ word: 'technique', meaning: '延期する', lang: 'en-US' },
+{ word: 'attention', meaning: '総収益', lang: 'en-US' },
+{ word: 'consultant', meaning: '講演', lang: 'en-US' },
+{ word: 'postpone', meaning: '非常に', lang: 'en-US' },
+{ word: 'revenue', meaning: '学期／専門用語', lang: 'en-US' },
+{ word: 'speech', meaning: '協議事項', lang: 'en-US' },
+{ word: 'highly', meaning: '実演', lang: 'en-US' },
+{ word: 'term', meaning: '競争', lang: 'en-US' },
+{ word: 'agenda', meaning: '具体的な', lang: 'en-US' },
+{ word: 'demonstration', meaning: 'いくぶん', lang: 'en-US' },
+{ word: 'competition', meaning: '感銘を与える', lang: 'en-US' },
+{ word: 'specific', meaning: '事実', lang: 'en-US' },
+{ word: 'rather', meaning: '署名', lang: 'en-US' },
+{ word: 'impress', meaning: '従業員名簿／賃金台帳', lang: 'en-US' },
+{ word: 'fact', meaning: '認める', lang: 'en-US' },
+{ word: 'signature', meaning: '勝つ／獲得する', lang: 'en-US' },
+{ word: 'payroll', meaning: '…のように思われる', lang: 'en-US' },
+{ word: 'acknowledge', meaning: '故障／不調', lang: 'en-US' },
+{ word: 'win', meaning: '大会', lang: 'en-US' },
+{ word: 'seem', meaning: '仕事', lang: 'en-US' },
+{ word: 'trouble', meaning: '…なしで', lang: 'en-US' },
+{ word: 'convention', meaning: '予定を変更する', lang: 'en-US' },
+{ word: 'task', meaning: '教える', lang: 'en-US' },
+{ word: 'without', meaning: '取り扱う', lang: 'en-US' },
+{ word: 'reschedule', meaning: '販売する', lang: 'en-US' },
+{ word: 'teach', meaning: '適した', lang: 'en-US' },
+{ word: 'handle', meaning: '…の間に', lang: 'en-US' },
+{ word: 'distribute', meaning: '…の到るところに', lang: 'en-US' },
+{ word: 'suitable', meaning: '選択', lang: 'en-US' },
+{ word: 'between', meaning: '公式の', lang: 'en-US' },
+{ word: 'throughout', meaning: '地域', lang: 'en-US' },
+{ word: 'choice', meaning: '知らせる', lang: 'en-US' },
+{ word: 'official', meaning: '運動／権利を行使する', lang: 'en-US' },
+{ word: 'region', meaning: '小冊子', lang: 'en-US' },
+{ word: 'notify', meaning: '認識する', lang: 'en-US' },
+{ word: 'exercise', meaning: '…と似ている', lang: 'en-US' },
+{ word: 'brochure', meaning: 'いつもの', lang: 'en-US' },
+{ word: 'recognize', meaning: '芸術作品', lang: 'en-US' },
+{ word: 'similar', meaning: '安定した', lang: 'en-US' },
+{ word: 'usual', meaning: '賃貸借契約', lang: 'en-US' },
+{ word: 'artwork', meaning: 'わくわくさせる', lang: 'en-US' },
+{ word: 'secure', meaning: '損害', lang: 'en-US' },
+{ word: 'lease', meaning: '環境／状況', lang: 'en-US' },
+{ word: 'excite', meaning: '…を除いて', lang: 'en-US' },
+{ word: 'damage', meaning: '有名な', lang: 'en-US' },
+{ word: 'environment', meaning: 'ほとんど', lang: 'en-US' },
+{ word: 'except', meaning: '再開する', lang: 'en-US' },
+{ word: 'famous', meaning: '説明書／手作業の', lang: 'en-US' },
+{ word: 'nearly', meaning: '…を超える', lang: 'en-US' },
+{ word: 'renew', meaning: '心配する', lang: 'en-US' },
+{ word: 'manual', meaning: '気にする', lang: 'en-US' },
+{ word: 'exceed', meaning: '数／考える', lang: 'en-US' },
+{ word: 'worry', meaning: '分析', lang: 'en-US' },
+{ word: 'mind', meaning: '検索する', lang: 'en-US' },
+{ word: 'figure', meaning: '能力', lang: 'en-US' },
+{ word: 'analysis', meaning: '理想的な', lang: 'en-US' },
+{ word: 'search', meaning: '産業の', lang: 'en-US' },
+{ word: 'ability', meaning: '助言する', lang: 'en-US' },
+{ word: 'ideal', meaning: '難しい', lang: 'en-US' },
+{ word: 'industrial', meaning: '移す／転任する', lang: 'en-US' },
+{ word: 'advise', meaning: '博覧会', lang: 'en-US' },
+{ word: 'hard', meaning: '景色', lang: 'en-US' },
+{ word: 'transfer', meaning: '主導権', lang: 'en-US' },
+{ word: 'expo', meaning: '食事をすること', lang: 'en-US' },
+{ word: 'landscape', meaning: '実験室', lang: 'en-US' },
+{ word: 'initiative', meaning: '伝統的な', lang: 'en-US' },
+{ word: 'dining', meaning: '収容する', lang: 'en-US' },
+{ word: 'laboratory', meaning: '表題', lang: 'en-US' },
+{ word: 'traditional', meaning: 'それ以上に', lang: 'en-US' },
+{ word: 'accommodate', meaning: '供給メーカー', lang: 'en-US' },
+{ word: 'title', meaning: '専門家', lang: 'en-US' },
+{ word: 'further', meaning: '上げる／集める', lang: 'en-US' },
+{ word: 'vendor', meaning: '費やす', lang: 'en-US' },
+{ word: 'specialist', meaning: '消費者', lang: 'en-US' },
+{ word: 'raise', meaning: '獲得する', lang: 'en-US' },
+{ word: 'spend', meaning: 'さまざまな', lang: 'en-US' },
+{ word: 'consumer', meaning: 'たびたび', lang: 'en-US' },
+{ word: 'gain', meaning: '便利な', lang: 'en-US' },
+{ word: 'various', meaning: '…を着ている', lang: 'en-US' },
+{ word: 'often', meaning: '以前の', lang: 'en-US' },
+{ word: 'convenient', meaning: '修理する', lang: 'en-US' },
+{ word: 'wear', meaning: '基準', lang: 'en-US' },
+{ word: 'previous', meaning: '解決策', lang: 'en-US' },
+{ word: 'fix', meaning: 'その他に', lang: 'en-US' },
+{ word: 'standard', meaning: '理解する', lang: 'en-US' },
+{ word: 'solution', meaning: '階層', lang: 'en-US' },
+{ word: 'else', meaning: '一緒に', lang: 'en-US' },
+{ word: 'understand', meaning: '委員会', lang: 'en-US' },
+{ word: 'tier', meaning: '祝いの言葉', lang: 'en-US' },
+{ word: 'together', meaning: '延長する', lang: 'en-US' },
+{ word: 'committee', meaning: '避ける', lang: 'en-US' },
+{ word: 'congratulations', meaning: '戦略', lang: 'en-US' },
+{ word: 'extend', meaning: '知らせる', lang: 'en-US' },
+{ word: 'avoid', meaning: 'とりわけ', lang: 'en-US' },
+{ word: 'strategy', meaning: '誤り', lang: 'en-US' },
+{ word: 'inform', meaning: '営利的な', lang: 'en-US' },
+{ word: 'especially', meaning: 'したがって', lang: 'en-US' },
+{ word: 'mistake', meaning: '新入社員／採用する', lang: 'en-US' },
+{ word: 'commercial', meaning: '話題', lang: 'en-US' },
+{ word: 'therefore', meaning: '含む', lang: 'en-US' },
+{ word: 'recruit', meaning: '組織', lang: 'en-US' },
+{ word: 'topic', meaning: '責任を負うべき／原因である', lang: 'en-US' },
+{ word: 'contain', meaning: '請求書', lang: 'en-US' },
+{ word: 'organization', meaning: 'いずれか／どちらかの', lang: 'en-US' },
+{ word: 'responsible', meaning: '好む', lang: 'en-US' },
+{ word: 'bill', meaning: '内側', lang: 'en-US' },
+{ word: 'either', meaning: '含む', lang: 'en-US' },
+{ word: 'prefer', meaning: '重役', lang: 'en-US' },
+{ word: 'interior', meaning: '交通', lang: 'en-US' },
+{ word: 'involve', meaning: '割り当てる', lang: 'en-US' },
+{ word: 'executive', meaning: '…から遠くに', lang: 'en-US' },
+{ word: 'traffic', meaning: '保証', lang: 'en-US' },
+{ word: 'assign', meaning: '捜す', lang: 'en-US' },
+{ word: 'far from', meaning: '近くの', lang: 'en-US' },
+{ word: 'warranty', meaning: '効果的な', lang: 'en-US' },
+{ word: 'seek', meaning: '許可証／許可する', lang: 'en-US' },
+{ word: 'nearby', meaning: '試みる', lang: 'en-US' },
+{ word: 'effective', meaning: '例', lang: 'en-US' },
+{ word: 'permit', meaning: 'きちんと', lang: 'en-US' },
+{ word: 'attempt', meaning: '基礎／活動の中心を置く', lang: 'en-US' },
+{ word: 'example', meaning: '明快な', lang: 'en-US' },
+{ word: 'properly', meaning: '…の下に', lang: 'en-US' },
+{ word: 'base', meaning: '反響', lang: 'en-US' },
+{ word: 'clear', meaning: '驚かす', lang: 'en-US' },
+{ word: 'under', meaning: '…が正しいと確認する', lang: 'en-US' },
+{ word: 'response', meaning: 'より良い', lang: 'en-US' },
+{ word: 'surprise', meaning: '信頼できる', lang: 'en-US' },
+{ word: 'verify', meaning: 'どちらも…でない', lang: 'en-US' },
+{ word: 'better', meaning: '購読する', lang: 'en-US' },
+{ word: 'reliable', meaning: 'アンケート', lang: 'en-US' },
+{ word: 'neither', meaning: '旅行計画', lang: 'en-US' },
+{ word: 'subscribe', meaning: '学位', lang: 'en-US' },
+{ word: 'questionnaire', meaning: '証明書', lang: 'en-US' },
+{ word: 'itinerary', meaning: '同封する', lang: 'en-US' },
+{ word: 'degree', meaning: '処理する', lang: 'en-US' },
+{ word: 'certificate', meaning: '目立たせる', lang: 'en-US' },
+{ word: 'enclose', meaning: '近所', lang: 'en-US' },
+{ word: 'deal with', meaning: '…より前に', lang: 'en-US' },
+{ word: 'highlight', meaning: '重要な', lang: 'en-US' },
+{ word: 'neighborhood', meaning: '処方箋', lang: 'en-US' },
+{ word: 'prior to', meaning: '食堂', lang: 'en-US' },
+{ word: 'significant', meaning: '…であると思う', lang: 'en-US' },
+{ word: 'prescription', meaning: '適任の', lang: 'en-US' },
+{ word: 'eatery', meaning: '申し訳ありませんが…', lang: 'en-US' },
+{ word: 'be supposed to', meaning: '放送番組／放送する', lang: 'en-US' },
+{ word: 'eligible', meaning: '間違いなく', lang: 'en-US' },
+{ word: 'I’m afraid…', meaning: '実行する', lang: 'en-US' },
+{ word: 'broadcast', meaning: '…を代表して', lang: 'en-US' },
+{ word: 'definitely', meaning: 'ようやく', lang: 'en-US' },
+{ word: 'implement', meaning: '独占的な', lang: 'en-US' },
+{ word: 'on behalf of', meaning: '起こる', lang: 'en-US' },
+{ word: 'finally', meaning: '予測する', lang: 'en-US' },
+{ word: 'exclusive', meaning: '発着ロビー', lang: 'en-US' },
+{ word: 'occur', meaning: 'それまで', lang: 'en-US' },
+{ word: 'predict', meaning: '値段が手頃な', lang: 'en-US' },
+{ word: 'terminal', meaning: '天井', lang: 'en-US' },
+{ word: 'in the meantime', meaning: '専攻科目／主要な', lang: 'en-US' },
+{ word: 'affordable', meaning: '名簿', lang: 'en-US' },
+{ word: 'ceiling', meaning: '定期的に', lang: 'en-US' },
+{ word: 'major', meaning: 'さもなければ', lang: 'en-US' },
+{ word: 'directory', meaning: '出発する', lang: 'en-US' },
+{ word: 'regularly', meaning: '導入', lang: 'en-US' },
+{ word: 'otherwise', meaning: '影響', lang: 'en-US' },
+{ word: 'depart', meaning: '…に値する', lang: 'en-US' },
+{ word: 'introduction', meaning: '減少する', lang: 'en-US' },
+{ word: 'impact', meaning: '…の向こうに', lang: 'en-US' },
+{ word: 'worth', meaning: '…する時はいつでも', lang: 'en-US' },
+{ word: 'decrease', meaning: '…してもかまわない', lang: 'en-US' },
+{ word: 'beyond', meaning: '大学', lang: 'en-US' },
+{ word: 'whenever', meaning: 'ガラスケース', lang: 'en-US' },
+{ word: 'willing', meaning: '正式の', lang: 'en-US' },
+{ word: 'college', meaning: '調整する', lang: 'en-US' },
+{ word: 'showcase', meaning: '関連のある', lang: 'en-US' },
+{ word: 'formal', meaning: '絶対に', lang: 'en-US' },
+{ word: 'adjust', meaning: '地域', lang: 'en-US' },
+{ word: 'relevant', meaning: '最大量／最大数', lang: 'en-US' },
+{ word: 'absolutely', meaning: '料理', lang: 'en-US' },
+{ word: 'district', meaning: '産出する', lang: 'en-US' },
+{ word: 'maximum', meaning: 'およそ', lang: 'en-US' },
+{ word: 'cuisine', meaning: 'ホテルなどの係', lang: 'en-US' },
+{ word: 'yield', meaning: '基金／資金を提供する', lang: 'en-US' },
+{ word: 'approximate', meaning: '断る／減少する', lang: 'en-US' },
+{ word: 'clerk', meaning: '有名人のサイン', lang: 'en-US' },
+{ word: 'fund', meaning: '特定の', lang: 'en-US' },
+{ word: 'decline', meaning: '制服', lang: 'en-US' },
+{ word: 'autograph', meaning: '謝罪する', lang: 'en-US' },
+{ word: 'particular', meaning: '行きやすい', lang: 'en-US' },
+{ word: 'uniform', meaning: '楽器', lang: 'en-US' },
+{ word: 'apologize', meaning: 'コピー', lang: 'en-US' },
+{ word: 'accessible', meaning: '管理の', lang: 'en-US' },
+{ word: 'instrument', meaning: '提供する／貢献する', lang: 'en-US' },
+{ word: 'photocopy', meaning: '要約／情報を消化する', lang: 'en-US' },
+{ word: 'administrative', meaning: '見事な／定番の', lang: 'en-US' },
+{ word: 'contribute', meaning: '等しく', lang: 'en-US' },
+{ word: 'digest', meaning: '入学する', lang: 'en-US' },
+{ word: 'classic', meaning: '達成', lang: 'en-US' },
+{ word: 'equally', meaning: '文字で', lang: 'en-US' },
+{ word: 'enroll', meaning: '寄付する', lang: 'en-US' },
+{ word: 'achievement', meaning: '10年間', lang: 'en-US' },
+{ word: 'in writing', meaning: '温度', lang: 'en-US' },
+{ word: 'donate', meaning: '映す', lang: 'en-US' },
+{ word: 'decade', meaning: '借りている', lang: 'en-US' },
+{ word: 'temperature', meaning: 'ふつうは', lang: 'en-US' },
+{ word: 'reflect', meaning: '聴衆', lang: 'en-US' },
+{ word: 'owe', meaning: '実践的な', lang: 'en-US' },
+{ word: 'normally', meaning: '急ぐ', lang: 'en-US' },
+{ word: 'audience', meaning: '独特の', lang: 'en-US' },
+{ word: 'practical', meaning: '保証する', lang: 'en-US' },
+{ word: 'hurry', meaning: '経験する', lang: 'en-US' },
+{ word: 'unique', meaning: '機関', lang: 'en-US' },
+{ word: 'guarantee', meaning: 'ほとんど…ない', lang: 'en-US' },
+{ word: 'undergo', meaning: '傑出した／未払いの', lang: 'en-US' },
+{ word: 'institute', meaning: '…は別として', lang: 'en-US' },
+{ word: 'hardly', meaning: '…の中へ', lang: 'en-US' },
+{ word: 'outstanding', meaning: '手荷物', lang: 'en-US' },
+{ word: 'aside from', meaning: '方法', lang: 'en-US' },
+{ word: 'inside', meaning: '一列に', lang: 'en-US' },
+{ word: 'baggage', meaning: 'プロフィール', lang: 'en-US' },
+{ word: 'method', meaning: '強調する', lang: 'en-US' },
+{ word: 'in a row', meaning: '入門書', lang: 'en-US' },
+{ word: 'profile', meaning: '満足', lang: 'en-US' },
+{ word: 'emphasize', meaning: '傷', lang: 'en-US' },
+{ word: 'handbook', meaning: '瞬間', lang: 'en-US' },
+{ word: 'satisfaction', meaning: '基礎', lang: 'en-US' },
+{ word: 'defect', meaning: '明らかにする', lang: 'en-US' },
+{ word: 'moment', meaning: '講堂', lang: 'en-US' },
+{ word: 'foundation', meaning: '出口', lang: 'en-US' },
+{ word: 'clarify', meaning: '受取人', lang: 'en-US' },
+{ word: 'auditorium', meaning: '進歩', lang: 'en-US' },
+{ word: 'exit', meaning: '飾る', lang: 'en-US' },
+{ word: 'recipient', meaning: '推測する', lang: 'en-US' },
+{ word: 'progress', meaning: '…しない限り', lang: 'en-US' },
+{ word: 'decorate', meaning: '能率', lang: 'en-US' },
+{ word: 'guess', meaning: 'はしご', lang: 'en-US' },
+{ word: 'unless', meaning: '迅速な', lang: 'en-US' },
+{ word: 'efficiency', meaning: '仕事場', lang: 'en-US' },
+{ word: 'ladder', meaning: '耐久性のある', lang: 'en-US' },
+{ word: 'quick', meaning: '合併', lang: 'en-US' },
+{ word: 'workplace', meaning: '優先事項', lang: 'en-US' },
+{ word: 'durable', meaning: '主要な', lang: 'en-US' },
+{ word: 'merger', meaning: '知識などの提供', lang: 'en-US' },
+{ word: 'priority', meaning: 'モニター', lang: 'en-US' },
+{ word: 'primary', meaning: '全体の', lang: 'en-US' },
+{ word: 'input', meaning: '構造', lang: 'en-US' },
+{ word: 'monitor', meaning: '個人', lang: 'en-US' },
+{ word: 'entire', meaning: '完結させる', lang: 'en-US' },
+{ word: 'structure', meaning: '証拠', lang: 'en-US' },
+{ word: 'individual', meaning: '積み重ねる', lang: 'en-US' },
+{ word: 'finalize', meaning: '資格を与える', lang: 'en-US' },
+{ word: 'evidence', meaning: '規則', lang: 'en-US' },
+{ word: 'stack', meaning: '要約', lang: 'en-US' },
+{ word: 'qualify', meaning: '小型の', lang: 'en-US' },
+{ word: 'regulation', meaning: '絶え間なく続く', lang: 'en-US' },
+{ word: 'summary', meaning: '集める', lang: 'en-US' },
+{ word: 'compact', meaning: 'まもなく', lang: 'en-US' },
+{ word: 'constant', meaning: '組み入れる', lang: 'en-US' },
+{ word: 'gather', meaning: 'プロジェクター', lang: 'en-US' },
+{ word: 'shortly', meaning: 'パネル', lang: 'en-US' },
+{ word: 'incorporate', meaning: 'レイアウト', lang: 'en-US' },
+{ word: 'projector', meaning: '運賃', lang: 'en-US' },
+{ word: 'panel', meaning: '明らかにする', lang: 'en-US' },
+{ word: 'layout', meaning: '達成', lang: 'en-US' },
+{ word: 'fare', meaning: '単純な', lang: 'en-US' },
+{ word: 'determine', meaning: '気づいている', lang: 'en-US' },
+{ word: 'accomplishment', meaning: 'テナント', lang: 'en-US' },
+{ word: 'simple', meaning: '喜び', lang: 'en-US' },
+{ word: 'aware', meaning: '要求／要求する', lang: 'en-US' },
+{ word: 'tenant', meaning: '青写真', lang: 'en-US' },
+{ word: 'pleasure', meaning: '有利な点', lang: 'en-US' },
+{ word: 'demand', meaning: '歯の', lang: 'en-US' },
+{ word: 'blueprint', meaning: '地下鉄', lang: 'en-US' },
+{ word: 'advantage', meaning: '頭上の', lang: 'en-US' },
+{ word: 'dental', meaning: '防水性の', lang: 'en-US' },
+{ word: 'metro', meaning: '言語', lang: 'en-US' },
+{ word: 'overhead', meaning: '完璧な', lang: 'en-US' },
+{ word: 'waterproof', meaning: '…の上方に', lang: 'en-US' },
+{ word: 'language', meaning: '幸運', lang: 'en-US' },
+{ word: 'perfect', meaning: '正確に／そのとおり', lang: 'en-US' },
+{ word: 'above', meaning: '影響を及ぼす', lang: 'en-US' },
+{ word: 'luck', meaning: '緊急の', lang: 'en-US' },
+{ word: 'exactly', meaning: '価値の高い', lang: 'en-US' },
+{ word: 'influence', meaning: '評価する', lang: 'en-US' },
+{ word: 'urgent', meaning: 'レジ係', lang: 'en-US' },
+{ word: 'valuable', meaning: '専念する', lang: 'en-US' },
+{ word: 'assess', meaning: '稼ぐ', lang: 'en-US' },
+{ word: 'cashier', meaning: 'ゼロから', lang: 'en-US' },
+{ word: 'dedicate', meaning: '2つの', lang: 'en-US' },
+{ word: 'earn', meaning: '社会の', lang: 'en-US' },
+{ word: 'from scratch', meaning: '接続する', lang: 'en-US' },
+{ word: 'a couple of', meaning: 'たくさん', lang: 'en-US' },
+{ word: 'social', meaning: '一晩中', lang: 'en-US' },
+{ word: 'connect', meaning: '整理', lang: 'en-US' },
+{ word: 'plenty of', meaning: '…の上へ', lang: 'en-US' },
+{ word: 'overnight', meaning: '資金援助', lang: 'en-US' },
+{ word: 'clearance', meaning: '柔軟な', lang: 'en-US' },
+{ word: 'onto', meaning: '自動的に', lang: 'en-US' },
+{ word: 'sponsorship', meaning: 'ただ1人で', lang: 'en-US' },
+{ word: 'flexible', meaning: '栄養', lang: 'en-US' },
+{ word: 'automatically', meaning: 'よく知られた', lang: 'en-US' },
+{ word: 'alone', meaning: '顧客', lang: 'en-US' },
+{ word: 'nutrition', meaning: '加入', lang: 'en-US' },
+{ word: 'familiar', meaning: '広範囲の', lang: 'en-US' },
+{ word: 'patron', meaning: '着実な', lang: 'en-US' },
+{ word: 'entry', meaning: '取引', lang: 'en-US' },
+{ word: 'broad', meaning: 'とてもおいしい', lang: 'en-US' },
+{ word: 'steady', meaning: 'チェックアウト／レジ', lang: 'en-US' },
+{ word: 'transaction', meaning: '手押し車', lang: 'en-US' },
+{ word: 'delicious', meaning: '探索する', lang: 'en-US' },
+{ word: 'checkout', meaning: '約束する', lang: 'en-US' },
+{ word: 'wheelbarrow', meaning: '…を予期する', lang: 'en-US' },
+{ word: 'explore', meaning: '食堂', lang: 'en-US' },
+{ word: 'promise', meaning: '社会', lang: 'en-US' },
+{ word: 'anticipate', meaning: '記念日', lang: 'en-US' },
+{ word: 'cafeteria', meaning: '評価', lang: 'en-US' },
+{ word: 'society', meaning: '配布資料', lang: 'en-US' },
+{ word: 'anniversary', meaning: '向ける／直接の', lang: 'en-US' }
+
+    ];
+
+    let currentIndex = 0;
+    let incorrectWords = [];
+    let startTime;
+    let timerInterval;
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function startTimer() {
+      startTime = Date.now();
+      timerInterval = setInterval(updateTimer, 100);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    function updateTimer() {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+      const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+      const s = String(Math.floor(elapsed % 60)).padStart(2, '0');
+      document.querySelector('.timer').textContent = `${h}:${m}:${s}`;
+    }
+
+    function showWord() {
+      document.querySelector('.word').textContent = words[currentIndex].word;
+      document.querySelector('.counter').textContent = `${currentIndex + 1} / ${words.length} 問目`;
+    }
+
+    function showAnswer() {
+      document.querySelector('.word').textContent = `${words[currentIndex].word} / ${words[currentIndex].meaning}`;
+      document.getElementById('reveal').style.display = 'none';
+      document.getElementById('correct').style.display = 'block';
+      document.getElementById('incorrect').style.display = 'block';
+    }
+
+    function speakWord() {
+      const audio = new Audio(`audio/${words[currentIndex].word}.mp3`);
+      audio.play();
+    }
+
+    document.getElementById('speak').onclick = speakWord;
+
+    function nextWord() {
+      currentIndex++;
+      if (currentIndex < words.length) {
+        document.getElementById('reveal').style.display = 'block';
+        document.getElementById('correct').style.display = 'none';
+        document.getElementById('incorrect').style.display = 'none';
+        showWord();
+      } else {
+        stopTimer();
+        showResults();
+      }
+    }
+
+    function showResults() {
+      document.getElementById('correct').style.display = 'none';
+      document.getElementById('incorrect').style.display = 'none';
+      if (incorrectWords.length > 0) {
+        document.getElementById('retry').style.display = 'block';
+        document.querySelector('.incorrect-list').innerHTML = '<strong>間違えた単語:</strong><br>' + incorrectWords.map(w => w.word + ' / ' + w.meaning).join('<br>');
+      } else {
+        document.querySelector('.incorrect-list').innerHTML = '全問正解！';
+      }
+    }
+
+    document.getElementById('reveal').onclick = showAnswer;
+    document.getElementById('correct').onclick = nextWord;
+    document.getElementById('incorrect').onclick = () => {
+      incorrectWords.push(words[currentIndex]);
+      nextWord();
+    };
+
+    document.getElementById('retry').onclick = () => {
+      shuffleArray(incorrectWords);
+      words.splice(0, words.length, ...incorrectWords);
+      incorrectWords = [];
+      currentIndex = 0;
+      document.getElementById('retry').style.display = 'none';
+      document.querySelector('.incorrect-list').innerHTML = '';
+      startTimer();
+      showWord();
+      document.getElementById('reveal').style.display = 'block';
+    };
+
+    shuffleArray(words);
+    startTimer();
+    showWord();
+  </script>
+</body>
+</html>
